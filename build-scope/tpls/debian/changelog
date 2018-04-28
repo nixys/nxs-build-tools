@@ -1,0 +1,5 @@
+#PACKAGE# (#VERSION#-1) wheezy jessie stretch; urgency=low
+
+  * New version nxs-build-tools
+
+ -- #USERNAME# <#EMAIL#>  #DATE#

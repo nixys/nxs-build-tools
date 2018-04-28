@@ -1,0 +1,13 @@
+Source: #PACKAGE#
+Section: devel
+Priority: optional
+Maintainer: #USERNAME# <#EMAIL#>
+Build-Depends: #BUILD_DEPS#
+Standards-Version: #POLICY#
+Homepage: https://nixys.ru
+
+Package: #PACKAGE#
+Architecture: amd64
+Depends: ${misc:Depends}, cmake, dh-make
+Description: Nixys build tools
+ Tools for build deb and rpm packages for projects.

@@ -1,0 +1,24 @@
+name: "awesome-project"
+version:
+  major: 0
+  minor: 0
+  patch: 1
+builds:
+- name: "debian"
+  deb:
+    dh_make:
+    - "--copyright=gpl3"
+    - "--single"
+    - "--templates=../build-scope/tpls/debian"
+    - "--yes"
+    - "--createorig"
+    dpkg_buildpackage:
+    - "-us"
+    - "-uc"
+- name: "centos"
+  rpm:
+    cmake:
+    - "-DRPM=on"
+    - "."
+    make:
+    - "package"

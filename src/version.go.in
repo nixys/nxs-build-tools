@@ -1,0 +1,3 @@
+package main
+
+const VERSION string = "@MAJOR_VERSION@.@MINOR_VERSION@.@PATCH_VERSION@"
