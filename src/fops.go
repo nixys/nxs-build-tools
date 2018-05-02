@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 )
 
 type giSlice []gitignore.IgnoreMatcher
@@ -155,18 +154,9 @@ func fopsCopyLaunchFile(src, dst string, info os.FileInfo) result {
 	}
 	defer f.Close()
 
-	uid := int(info.Sys().(*syscall.Stat_t).Uid)
-	gid := int(info.Sys().(*syscall.Stat_t).Gid)
-
 	if err = os.Chmod(dst, info.Mode()); err != nil {
 
 		fmt.Printf("Can't chmod to desination file: %s\n", err)
-		return false
-	}
-
-	if err = os.Chown(dst, uid, gid); err != nil {
-
-		fmt.Printf("Can't chown to desination file: %s\n", err)
 		return false
 	}
 
@@ -196,18 +186,9 @@ func fopsCopyLaunchFileDir(src, dst string, info os.FileInfo, gitignores giSlice
 		return false
 	}
 
-	uid := int(info.Sys().(*syscall.Stat_t).Uid)
-	gid := int(info.Sys().(*syscall.Stat_t).Gid)
-
 	if err := os.Chmod(dst, info.Mode()); err != nil {
 
 		fmt.Printf("Can't chmod to desination directory: %s\n", err)
-		return false
-	}
-
-	if err := os.Chown(dst, uid, gid); err != nil {
-
-		fmt.Printf("Can't chown to desination directory: %s\n", err)
 		return false
 	}
 
