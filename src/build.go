@@ -246,12 +246,14 @@ func buildOrigFilePath(targetDir, projectName string, versionMajor, versionMinor
 
 func buildCheckOrigVersion(ctx context) result {
 
-	rgx := regexp.MustCompile(`^.*` + ctx.pSettings.ProjectName + `_([\d]+.[\d]+.[\d]+).orig.*$`)
+	regexString := `^.*` + ctx.pSettings.ProjectName + `_([\d]+.[\d]+.[\d]+).orig.*$`
+
+	rgx := regexp.MustCompile(regexString)
 	s := rgx.FindStringSubmatch(ctx.origFile)
 
 	if len(s) == 0 {
 
-		fmt.Printf("Wrong orig file name format\n")
+		fmt.Printf("Wrong orig file name format: does not satisfy regex (orig file: \"%s\", regex: \"%s\")\n", ctx.origFile, regexString)
 		return false
 	}
 
@@ -263,7 +265,7 @@ func buildCheckOrigVersion(ctx context) result {
 
 	if oVersion != pVersion {
 
-		fmt.Printf("Mismatch of project and orig file versions\n")
+		fmt.Printf("Mismatch project and orig file versions (project version: \"%s\", orig file version: \"%s\")\n", pVersion, oVersion)
 		return false
 	}
 
