@@ -13,6 +13,7 @@ if(RPM OR SRPM)
 			"/usr/sbin"
 			"/etc/cron.d"
 			"/etc/logrotate.d"
+			"/etc/sudoers.d"
 			"/var"
 			"/var/log")
 
