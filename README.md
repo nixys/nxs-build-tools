@@ -87,13 +87,14 @@ Each project that uses nxs-build-tools to build packages needs the file `.proj-s
 * `version`: the object to define the packages version. Also you may use this values via CMake templates (such as file specified by `GO_VERSION_FILE_TPL` variable and similar) to determine your application version (conveniently store this data in one place).
 * `builds`: array of builds description. Each element of this array describes a specific options to build either `deb` or `rpm` packages.
   * `name`: the name of package build. This value uses to specify the name of package build by nxs-build-tools `--build-name` key.
+  * `env`: environment variables list specified in `VARIABLE_NAME: VARIABLE_VALUE` format. This may useful for CMake process for deb and rpm packages.
   * `deb`: block disribes options to build 'deb' packages. Each build may have either `deb` or `rpm` type.
       * `dh_make`: array with a 'dh_make' program options. See man dh_make for details.
       It is important to note that argument `--templates`, specifies the template directory in "build-scope/tpls/"" with the configuration files to build deb package.
       * `dpkg_buildpackage`: array with an 'dpkg-buildpackage' program options. See man dpkg-buildpackage for details.
   * `rpm`: block describes options to build 'rpm' packages. Each build may have either `deb` or `rpm` type.
       * `cmake`: array with a 'cmake' program options which are used to prepare project for building rpm packages. See cmake documentation for details.
-      You may specify flags for CMake such as `-DRPM=on` or `-DSRPM=on` to define a rpm build process. For example, with flag `-DSRPM=on` specified you get an rpm source package (srpm).
+      In addition to `env` section you may specify flags for CMake such as `-DRPM=on` or `-DSRPM=on` to define a rpm build process. For example, with flag `-DSRPM=on` specified you get an rpm source package (srpm).
       * `make`: array with an 'make' program options. See make documentation for details.
 
 ### .gitignore file
