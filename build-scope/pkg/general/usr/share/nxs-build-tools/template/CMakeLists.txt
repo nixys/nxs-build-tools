@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 
+# Set env variables
+set(DEB $ENV{DEB})
+set(RPM $ENV{RPM})
+set(SRPM $ENV{SRPM})
+
 macro(GET_PROJECT_SETTING setting_name var)
 	execute_process (
 		COMMAND bash -c "nxs-build-tools --project-root=${CMAKE_CURRENT_SOURCE_DIR} --command=setting-get --setting=${setting_name}"

@@ -5,6 +5,8 @@ version:
   patch: 1
 builds:
 - name: "debian"
+  env:
+    DEB: "on"
   deb:
     dh_make:
     - "--copyright=gpl3"
@@ -16,9 +18,10 @@ builds:
     - "-us"
     - "-uc"
 - name: "centos"
+  env:
+    RPM: "on"
   rpm:
     cmake:
-    - "-DRPM=on"
     - "."
     make:
     - "package"
