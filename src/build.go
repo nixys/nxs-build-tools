@@ -63,6 +63,12 @@ func buildPackage(ctx context) result {
 
 		if b.Name == ctx.buildName {
 
+			/* Set env variables for specified build */
+			for key, value := range b.Env {
+
+				os.Setenv(key, value)
+			}
+
 			if b.Deb != nil {
 
 				return buildPackageDeb(ctx, b)

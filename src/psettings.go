@@ -23,6 +23,7 @@ type PSettingsBuildsDocker struct {
 
 type PSettingsBuild struct {
 	Name   string                `yaml:"name"`
+	Env    map[string]string     `yaml:"env"`
 	Deb    *PSettingsBuildsDeb   `yaml:"deb,omitempty"`
 	Rpm    *PSettingsBuildsRpm   `yaml:"rpm,omitempty"`
 	Docker PSettingsBuildsDocker `yaml:"docker"`
