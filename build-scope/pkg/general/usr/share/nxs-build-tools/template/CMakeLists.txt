@@ -35,4 +35,5 @@ include(general_install)
 
 # Remove unnecessary modules
 include(golang)
+include(python)
 include(rpm-build)
