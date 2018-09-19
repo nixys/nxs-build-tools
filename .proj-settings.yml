@@ -1,8 +1,8 @@
 name: nxs-build-tools
 version:
-  major: 0
-  minor: 2
-  patch: 1
+  major: 1
+  minor: 0
+  patch: 0
 builds:
 - name: "debian"
   env:
