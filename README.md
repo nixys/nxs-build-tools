@@ -51,9 +51,11 @@ Command creates new files and directories in your project root:
 │           ├── README.Debian
 │           └── README.source
 ├── cmake
+│   ├── app-python.spec
 │   ├── general_install.cmake
 │   ├── golang.cmake
 │   ├── helpers_install.cmake
+│   ├── python.cmake
 │   └── rpm-build.cmake
 ├── CMakeLists.txt
 └── .proj-settings.yml
@@ -71,6 +73,13 @@ Command creates new files and directories in your project root:
       * `GO_VERSION_FILE_TPL`: path to CMake template file that contains the Go code with CMake variables to define the version for your apllication.
       * `GO_VERSION_FILE`: path to file with current application version (after CMake substitutes). You may include this file to your source code to display the apllication version (e.g. with '--version' key).
       * `GO_PACKAGES`: list of the Go packages used in your project. Specified packages will be downloaded during project build.
+      * The `install` command in this module describes instalation application binary file to the packages. You may change the source and/or destination path.
+  * `python.cmake`: module for build Python projects. If your project is not the Python project - you need to exclude this module in main `CMakeLists.txt` file.
+    Module provides follows variables:
+      * `PYTHON_VERSION_FILE_TPL`: path to CMake template file that contains the Python code with CMake variables to define the version for your apllication.
+      * `PYTHON_VERSION_FILE`: path to file with current application version (after CMake substitutes). You may include this file to your source code to display the apllication version (e.g. with '--version' key).
+      * `PYTHON_SPEC_FILE`: Python spec file for PyInstaller to build your application.
+      * `PYTHON_MODULES`: list of the Python modules used in your project. Specified modules will be downloaded and installed during project build.
       * The `install` command in this module describes instalation application binary file to the packages. You may change the source and/or destination path.
   * `helpers_install.cmake`: module contains helpers to use them with CMake in your project.
   * `rpm-build.cmake`: module contains the settings for an rpm packages builds. You may need to consult CMake documentation to edit this file for your project.
