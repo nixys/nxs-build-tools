@@ -51,7 +51,12 @@ func contextInit(args argsOpts) (selfContext, error) {
 		return ctx, err
 	}
 
-	// Check version specified via command line args
+	// Check package name specified via command line args
+	if len(args.pkgName) > 0 {
+		ctx.conf.ProjectName = args.pkgName
+	}
+
+	// Check package version specified via command line args
 	if len(args.pkgVersion) > 0 {
 
 		rgx, err := regexp.Compile(`^v?([\d]+).([\d]+).([\d]+).*$`)
@@ -68,6 +73,11 @@ func contextInit(args argsOpts) (selfContext, error) {
 		ctx.conf.Version.Major, _ = strconv.Atoi(s[1])
 		ctx.conf.Version.Minor, _ = strconv.Atoi(s[2])
 		ctx.conf.Version.Patch, _ = strconv.Atoi(s[3])
+	}
+
+	// Check package name specified
+	if len(ctx.conf.ProjectName) == 0 {
+		return ctx, fmt.Errorf("package name does not specified")
 	}
 
 	// Set version units as ENV
