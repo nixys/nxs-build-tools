@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 )
 
 type selfContext struct {
@@ -48,6 +50,31 @@ func contextInit(args argsOpts) (selfContext, error) {
 	if err != nil {
 		return ctx, err
 	}
+
+	// Check version specified via command line args
+	if len(args.pkgVersion) > 0 {
+
+		rgx, err := regexp.Compile(`^v?([\d]+).([\d]+).([\d]+).*$`)
+		if err != nil {
+			return ctx, fmt.Errorf("can't compile regexp to get version: %s", err)
+		}
+
+		s := rgx.FindStringSubmatch(args.pkgVersion)
+
+		if len(s) < 4 {
+			return ctx, fmt.Errorf("wrong version number specified by command line option: %s", args.pkgVersion)
+		}
+
+		ctx.conf.Version.Major, _ = strconv.Atoi(s[1])
+		ctx.conf.Version.Minor, _ = strconv.Atoi(s[2])
+		ctx.conf.Version.Patch, _ = strconv.Atoi(s[3])
+	}
+
+	// Set version units as ENV
+	os.Setenv("PROJECT_NAME", ctx.conf.ProjectName)
+	os.Setenv("PKG_VERSION_MAJOR", strconv.Itoa(ctx.conf.Version.Major))
+	os.Setenv("PKG_VERSION_MINOR", strconv.Itoa(ctx.conf.Version.Minor))
+	os.Setenv("PKG_VERSION_PATCH", strconv.Itoa(ctx.conf.Version.Patch))
 
 	return ctx, nil
 }

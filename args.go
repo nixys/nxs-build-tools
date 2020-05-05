@@ -15,6 +15,7 @@ type argsOpts struct {
 	cmd         string
 	setting     string
 	origFile    string
+	pkgVersion  string
 }
 
 var argsCommands = []string{
@@ -84,6 +85,12 @@ func argsParse() argsOpts {
 		"",
 		"If specified the package will be created from a orig archive file instead of source code from project root directory. Available either '.tar.gz' or '.tar.xz' files.")
 
+	pkgVersion := args.StringLong(
+		"package-version",
+		'V',
+		"",
+		"Override package version, specified in .proj-settings.yml file (used semantic versioning format)")
+
 	args.Parse(os.Args)
 
 	/* Show help */
@@ -122,6 +129,8 @@ func argsParse() argsOpts {
 	/* Orig file */
 	o.origFile = *origFile
 
+	o.pkgVersion = *pkgVersion
+
 	return o
 }
 
@@ -134,16 +143,16 @@ Additional description
   Each launch of nxs-build-tools makes some actions in accordance with of specified command (option '--command'). Available commands:
 
     '` + commandBuild + `': It is a default command. Create either 'deb' or 'rpm' package from the project source code or orig archive file. Command usage:
-        nxs-build-tools --command=` + commandBuild + ` --build-name=BUILD_NAME [--project-root=PROJECT_ROOT] [--target-dir=TARGET_DIR] [--orig-file=ORIG_FILE_PATH]
+        nxs-build-tools --command=` + commandBuild + ` --build-name=BUILD_NAME [--project-root=PROJECT_ROOT] [--target-dir=TARGET_DIR] [--orig-file=ORIG_FILE_PATH] [--package-version=VERSION]
 
     '` + commandMakeOrig + `': Create a source code orig archives. Two files ('.tar.gz' and '.tar.xz') will be created as a result from execution of this command. Command usage:
-        nxs-build-tools --command=` + commandMakeOrig + ` [--project-root=PROJECT_ROOT] [--target-dir=TARGET_DIR]
+        nxs-build-tools --command=` + commandMakeOrig + ` [--project-root=PROJECT_ROOT] [--target-dir=TARGET_DIR] [--package-version=VERSION]
 
     '` + commandPopulate + `': Populate specified directory (project root) with the necessary files to allows the project to use nxs-build-tools for build packages. Command usage:
         nxs-build-tools --command=` + commandPopulate + ` [--project-root=PROJECT_ROOT]
 
     '` + commandSettingGet + `': Get project settings from the '` + settingsFile + `' file. Basically this command is used by CMake, but it also can by used to automate your build processes. Command usage:
-        nxs-build-tools --command=` + commandSettingGet + ` --setting=SETTING_NAME [--project-root=PROJECT_ROOT]
+        nxs-build-tools --command=` + commandSettingGet + ` --setting=SETTING_NAME [--project-root=PROJECT_ROOT] [--package-version=VERSION]
 `
 
 	args.PrintUsage(os.Stdout)
