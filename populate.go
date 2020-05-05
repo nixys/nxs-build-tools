@@ -5,33 +5,34 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/nixys/nxs-build-tools/fops"
 )
 
-func populateProject(projectRoot string) result {
-	var files []string
+func populateProject(projectRoot string) error {
 
-	files, res := populateWalkTemplates(populateTpls, "", files)
-	if res == false {
-
-		return false
+	files, err := populateWalkTemplates(populateTpls, "")
+	if err != nil {
+		return err
 	}
 
+	// Check no files from templates directory
+	// exists in `projectRoot` dir
 	for _, s := range files {
 
 		p := fmt.Sprintf("%s/%s", projectRoot, s)
 
 		if _, err := os.Stat(p); err == nil {
-
-			fmt.Printf("Can't populate your project, file `%s` already exist\n", p)
-			return false
+			return fmt.Errorf("file `%s` already exist", p)
 		}
 	}
 
-	if res := fopsCopy(populateTpls, projectRoot); res == false {
-
-		return false
+	// Copy template files into project root directory
+	if err := fops.CopyWithIgnores(populateTpls, projectRoot); err != nil {
+		return err
 	}
 
+	// Helper message
 	fmt.Println(
 		`Project has been successfully populated!
 
@@ -50,44 +51,42 @@ CPackSourceConfig.cmake
 cmake_install.cmake
 EOF`)
 
-	return true
+	return nil
 }
 
-func populateWalkTemplates(path, relativePath string, files []string) ([]string, result) {
-	var res result
+// populateWalkTemplates returns all files contains in templates directory
+func populateWalkTemplates(path, relativePath string) ([]string, error) {
+
+	var files []string
 
 	info, err := os.Stat(path)
 	if err != nil {
-
-		return nil, false
+		return []string{}, err
 	}
 
 	if info.IsDir() {
 
 		infos, err := ioutil.ReadDir(path)
 		if err != nil {
-
-			fmt.Printf("Can't read template directory: %s\n", err)
-			return nil, false
+			return []string{}, fmt.Errorf("read template directory error: %s (path: %s)", err, path)
 		}
 
 		if len(relativePath) > 0 {
-
 			relativePath += "/"
 		}
 
 		for _, i := range infos {
 
-			files, res = populateWalkTemplates(filepath.Join(path, i.Name()), relativePath+i.Name(), files)
-			if res == false {
-
-				return nil, false
+			f, err := populateWalkTemplates(filepath.Join(path, i.Name()), relativePath+i.Name())
+			if err != nil {
+				return []string{}, err
 			}
+			files = append(files, f...)
 		}
 	} else {
 
 		files = append(files, relativePath)
 	}
 
-	return files, true
+	return files, nil
 }

@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/pborman/getopt/v2"
 	"os"
 	"strings"
+
+	"github.com/pborman/getopt/v2"
 )
 
-type optArgs struct {
+type argsOpts struct {
 	projectRoot string
 	targetDir   string
 	buildName   string
@@ -16,14 +17,22 @@ type optArgs struct {
 	origFile    string
 }
 
-var argsCommands = []string{commandBuild, commandMakeOrig, commandPopulate, commandSettingGet}
-var argsSettings = []string{settingGetProjectName,
+var argsCommands = []string{
+	commandBuild,
+	commandMakeOrig,
+	commandPopulate,
+	commandSettingGet,
+}
+
+var argsSettings = []string{
+	settingGetProjectName,
 	settingGetVersionMajor,
 	settingGetVersionMinor,
-	settingGetVersionPatch}
+	settingGetVersionPatch,
+}
 
-func argsParse() optArgs {
-	var opts optArgs
+func argsParse() argsOpts {
+	var o argsOpts
 
 	args := getopt.New()
 
@@ -41,7 +50,7 @@ func argsParse() optArgs {
 		"project-root",
 		'p',
 		"",
-		"Project root. The project root it is a directory that contains '"+pSettingsFile+"' file. If specified directory does not contain settings file then search in the parent directory will be continued")
+		"Project root. The project root it is a directory that contains '"+settingsFile+"' file. If specified directory does not contain settings file then search in the parent directory will be continued")
 
 	cmd := args.EnumLong(
 		"command",
@@ -60,7 +69,7 @@ func argsParse() optArgs {
 		"build-name",
 		'b',
 		"",
-		"Name of build to make package. All available builds specified in the project settings file '"+pSettingsFile+"'")
+		"Name of build to make package. All available builds specified in the project settings file '"+settingsFile+"'")
 
 	setting := args.EnumLong(
 		"setting",
@@ -92,30 +101,28 @@ func argsParse() optArgs {
 	}
 
 	/* Project root */
-	opts.projectRoot = *projectRoot
+	o.projectRoot = *projectRoot
 
 	/* Target dir */
-	opts.targetDir = *targetDir
+	o.targetDir = *targetDir
 
 	/* Build name */
-	opts.buildName = *buildName
+	o.buildName = *buildName
 
 	/* Command */
 	if len(*cmd) == 0 {
-
-		opts.cmd = commandBuild
+		o.cmd = commandBuild
 	} else {
-
-		opts.cmd = *cmd
+		o.cmd = *cmd
 	}
 
 	/* Get option value */
-	opts.setting = *setting
+	o.setting = *setting
 
 	/* Orig file */
-	opts.origFile = *origFile
+	o.origFile = *origFile
 
-	return opts
+	return o
 }
 
 func argsHelp(args *getopt.Set) {
@@ -135,7 +142,7 @@ Additional description
     '` + commandPopulate + `': Populate specified directory (project root) with the necessary files to allows the project to use nxs-build-tools for build packages. Command usage:
         nxs-build-tools --command=` + commandPopulate + ` [--project-root=PROJECT_ROOT]
 
-    '` + commandSettingGet + `': Get project settings from the '` + pSettingsFile + `' file. Basically this command is used by CMake, but it also can by used to automate your build processes. Command usage:
+    '` + commandSettingGet + `': Get project settings from the '` + settingsFile + `' file. Basically this command is used by CMake, but it also can by used to automate your build processes. Command usage:
         nxs-build-tools --command=` + commandSettingGet + ` --setting=SETTING_NAME [--project-root=PROJECT_ROOT]
 `
 
@@ -145,6 +152,5 @@ Additional description
 }
 
 func argsVersion() {
-
-	fmt.Println(VERSION)
+	fmt.Println(Version)
 }

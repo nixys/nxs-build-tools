@@ -6,119 +6,113 @@ import (
 	"path/filepath"
 )
 
-type context struct {
-	projectRoot string    /* Root directory for current project */
-	targetDir   string    /* Path to directory where build packages for project */
-	buildName   string    /* Name of the build to create package for */
-	origFile    string    /* Path to orig archive */
-	pSettings   PSettings /* Project settings (from project settings file) */
+type selfContext struct {
+
+	// Project root directory
+	projectRoot string
+
+	// Directory path for project build
+	targetDir string
+
+	// Name of the build to create package for
+	buildName string
+
+	// Path to orig archive file
+	origFile string
+
+	// Project settings
+	conf confOpts
 }
 
-func contextInit(opts optArgs) (context, result) {
-	var ctx context
-	var res result
+func contextInit(args argsOpts) (selfContext, error) {
 
-	/* Build path */
+	var (
+		ctx selfContext
+		err error
+	)
 
-	ctx.projectRoot, res = contextInitProjectRoot(opts.projectRoot)
-	if res == false {
-
-		return ctx, false
+	ctx.projectRoot, err = contextInitProjectRoot(args.projectRoot)
+	if err != nil {
+		return ctx, err
 	}
 
-	ctx.targetDir, res = contextInitTargetDir(ctx.projectRoot, opts.targetDir)
-	if res == false {
-
-		return ctx, false
+	ctx.targetDir, err = contextInitTargetDir(ctx.projectRoot, args.targetDir)
+	if err != nil {
+		return ctx, err
 	}
 
-	ctx.buildName = opts.buildName
-	ctx.origFile = opts.origFile
+	ctx.buildName = args.buildName
+	ctx.origFile = args.origFile
 
-	ctx.pSettings, res = psettingsLoad(ctx.projectRoot)
-	if res == false {
-
-		return ctx, false
+	ctx.conf, err = confRead(ctx.projectRoot + "/" + settingsFile)
+	if err != nil {
+		return ctx, err
 	}
 
-	return ctx, true
+	return ctx, nil
 }
 
-func contextInitProjectRoot(optsProjectRoot string) (string, result) {
-	var projectRoot string
-	var res result
-	var err error
+// contextInitProjectRoot gets project root directory
+func contextInitProjectRoot(projectRoot string) (string, error) {
 
-	if len(optsProjectRoot) == 0 {
+	var (
+		pr  string
+		err error
+	)
 
-		projectRoot, res = contextProjectRootGet(optsProjectRoot)
-		if res == false {
-
-			return projectRoot, false
+	if len(projectRoot) == 0 {
+		pr, err = contextProjectRootLookup(projectRoot)
+		if err != nil {
+			return pr, err
 		}
 	} else {
-
-		projectRoot, err = filepath.Abs(optsProjectRoot)
+		pr, err = filepath.Abs(projectRoot)
 		if err != nil {
-
-			fmt.Printf("Can't get absolute path: %s\n", err)
-			return projectRoot, false
+			return pr, fmt.Errorf("can't get absolute path: %s (path: %s)", err, projectRoot)
 		}
 	}
 
-	return projectRoot, true
+	return pr, nil
 }
 
-func contextInitTargetDir(ctxProjectRoot, optsTargetDir string) (string, result) {
-	var targetDir string
-	var err error
+func contextInitTargetDir(projectRoot, targetDir string) (string, error) {
 
-	if len(optsTargetDir) == 0 {
+	var (
+		td  string
+		err error
+	)
 
-		targetDir = ctxProjectRoot + "/" + defaultTargetDir
+	if len(targetDir) == 0 {
+		td = projectRoot + "/" + defaultTargetDir
 	} else {
-
-		targetDir, err = filepath.Abs(optsTargetDir)
+		td, err = filepath.Abs(targetDir)
 		if err != nil {
-
-			fmt.Printf("Can't get absolute path: %s\n", err)
-			return targetDir, false
+			return td, fmt.Errorf("can't get absolute path: %s (path: %s)", err, targetDir)
 		}
 	}
 
-	return targetDir, true
+	return td, nil
 }
 
-/*
- Get project root
-
- The project root is a directory that contains .nxs-settings.proj file.
- Looking for in parent directory if the current directory doesn't contain .nxs-settings.proj file.
-*/
-func contextProjectRootGet(path string) (string, result) {
+// contextProjectRootLookup lookups the directory from `path` till `/` contains settings file.
+func contextProjectRootLookup(path string) (string, error) {
 
 	p, err := filepath.Abs(path)
 	if err != nil {
-
-		fmt.Printf("Can't get absolute path: %s\n", err)
-		return "", false
+		return "", fmt.Errorf("can't get absolute path: %s (path: %s)", err, path)
 	}
 
-	pSPath := p + "/" + pSettingsFile
+	pSPath := p + "/" + settingsFile
 
 	info, err := os.Stat(pSPath)
 	if err == nil && info.Mode().IsRegular() {
-
-		/* If project settings file found */
-
-		return p, true
+		// If project settings file found
+		return p, nil
 	}
 
 	if p == "/" {
-
-		fmt.Printf("Can't find project settings file %s\n", pSettingsFile)
-		return "", false
+		return "", fmt.Errorf("can't find project settings file %s", settingsFile)
 	}
 
-	return contextProjectRootGet(filepath.Dir(p))
+	return contextProjectRootLookup(filepath.Dir(p))
 }

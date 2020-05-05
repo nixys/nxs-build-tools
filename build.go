@@ -6,91 +6,85 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+
+	"github.com/nixys/nxs-build-tools/arch"
+	"github.com/nixys/nxs-build-tools/fops"
 )
 
-func buildMakeOrig(ctx context) result {
+func buildMakeOrig(ctx selfContext) error {
 
-	sourceDir := buildSourceDirPath(
+	origDir := buildSourceDirPath(
 		ctx.targetDir,
 		"orig",
-		ctx.pSettings.ProjectName,
-		ctx.pSettings.Version.Major,
-		ctx.pSettings.Version.Minor,
-		ctx.pSettings.Version.Patch)
-	origNameTgz := buildOrigFilePath(
+		ctx.conf.ProjectName,
+		ctx.conf.Version.Major,
+		ctx.conf.Version.Minor,
+		ctx.conf.Version.Patch)
+
+	origFileTgz := buildOrigFilePath(
 		ctx.targetDir,
-		ctx.pSettings.ProjectName,
-		ctx.pSettings.Version.Major,
-		ctx.pSettings.Version.Minor,
-		ctx.pSettings.Version.Patch,
+		ctx.conf.ProjectName,
+		ctx.conf.Version.Major,
+		ctx.conf.Version.Minor,
+		ctx.conf.Version.Patch,
 		"tar.gz")
-	origNameTxz := buildOrigFilePath(
+
+	origFileTxz := buildOrigFilePath(
 		ctx.targetDir,
-		ctx.pSettings.ProjectName,
-		ctx.pSettings.Version.Major,
-		ctx.pSettings.Version.Minor,
-		ctx.pSettings.Version.Patch,
+		ctx.conf.ProjectName,
+		ctx.conf.Version.Major,
+		ctx.conf.Version.Minor,
+		ctx.conf.Version.Patch,
 		"tar.xz")
 
-	if res := fopsCopy(ctx.projectRoot, sourceDir); res == false {
-
-		return false
+	if err := fops.CopyWithIgnores(ctx.projectRoot, origDir); err != nil {
+		return err
 	}
 
 	/* Make tar.gz */
-	if res := tarMakeGz(origNameTgz, sourceDir); res == false {
-
-		return false
+	if err := arch.Make(origDir, origFileTgz); err != nil {
+		return err
 	}
 
 	/* Make tar.xz */
-	if res := tarMakeXz(origNameTxz, sourceDir); res == false {
-
-		return false
+	if err := arch.Make(origDir, origFileTxz); err != nil {
+		return err
 	}
 
-	if res := fopsRemove(sourceDir); res == false {
-
-		return false
-	}
-
-	return true
+	return fops.Remove(origDir)
 }
 
-func buildPackage(ctx context) result {
+func buildPackage(ctx selfContext) error {
 
-	for _, b := range ctx.pSettings.Builds {
+	for _, b := range ctx.conf.Builds {
 
 		if b.Name == ctx.buildName {
 
 			/* Set env variables for specified build */
 			for key, value := range b.Env {
-
 				os.Setenv(key, value)
 			}
 
 			if b.Deb != nil {
-
 				return buildPackageDeb(ctx, b)
 			}
 
 			if b.Rpm != nil {
-
 				return buildPackageRpm(ctx, b)
 			}
+
+			return fmt.Errorf("no rules specified for build (build name: %s)", ctx.buildName)
 		}
 	}
 
-	fmt.Printf("No such build: \"%s\"\n", ctx.buildName)
-	return false
+	return fmt.Errorf("build not exist (build: %s)", ctx.buildName)
 }
 
-func buildPackageDeb(ctx context, build PSettingsBuild) result {
+func buildPackageDeb(ctx selfContext, build buildConf) error {
 
-	sourceDir, res := buildPrepSourceDir(ctx, build)
-	if res == false {
-
-		return false
+	sourceDir, err := buildPrepSourceDir(ctx, build)
+	if err != nil {
+		return err
 	}
 
 	cmdDhmake := exec.Command("dh_make", build.Deb.DHMake...)
@@ -107,26 +101,21 @@ func buildPackageDeb(ctx context, build PSettingsBuild) result {
 	cmdBuildpkg.Stderr = os.Stderr
 
 	if err := cmdDhmake.Run(); err != nil {
-
-		fmt.Printf("Deb build command `dh_make` error: %s\n", err)
-		return false
+		return fmt.Errorf("deb build command `dh_make` error: %s", err)
 	}
 
 	if err := cmdBuildpkg.Run(); err != nil {
-
-		fmt.Printf("Deb build command `dpkg-buildpackage` error: %s\n", err)
-		return false
+		return fmt.Errorf("deb build command `dpkg-buildpackage` error: %s", err)
 	}
 
-	return true
+	return nil
 }
 
-func buildPackageRpm(ctx context, build PSettingsBuild) result {
+func buildPackageRpm(ctx selfContext, build buildConf) error {
 
-	sourceDir, res := buildPrepSourceDir(ctx, build)
-	if res == false {
-
-		return false
+	sourceDir, err := buildPrepSourceDir(ctx, build)
+	if err != nil {
+		return err
 	}
 
 	cmdCmake := exec.Command("cmake", build.Rpm.CMake...)
@@ -143,82 +132,54 @@ func buildPackageRpm(ctx context, build PSettingsBuild) result {
 	cmdMake.Stderr = os.Stderr
 
 	if err := cmdCmake.Run(); err != nil {
-
-		fmt.Printf("Rpm build command `cmake` error: %s\n", err)
-		return false
+		return fmt.Errorf("rpm build command `cmake` error: %s", err)
 	}
 
 	if err := cmdMake.Run(); err != nil {
-
-		fmt.Printf("Rpm build command `make` error: %s\n", err)
-		return false
+		return fmt.Errorf("rpm build command `make` error: %s", err)
 	}
 
-	return true
+	return nil
 }
 
-func buildPrepSourceDir(ctx context, build PSettingsBuild) (string, result) {
+func buildPrepSourceDir(ctx selfContext, build buildConf) (string, error) {
 
 	sourceDir := buildSourceDirPath(
 		ctx.targetDir,
 		build.Name,
-		ctx.pSettings.ProjectName,
-		ctx.pSettings.Version.Major,
-		ctx.pSettings.Version.Minor,
-		ctx.pSettings.Version.Patch)
+		ctx.conf.ProjectName,
+		ctx.conf.Version.Major,
+		ctx.conf.Version.Minor,
+		ctx.conf.Version.Patch)
+
 	buildDir := buildDirPath(ctx.targetDir, build.Name)
 
 	if len(ctx.origFile) > 0 {
 
-		archType := tarGetArchType(ctx.origFile)
 		dstOrig := buildDir + "/" + filepath.Base(ctx.origFile)
 
-		if res := buildCheckOrigVersion(ctx); res == false {
-
-			return "", false
+		if err := buildCheckOrigVersion(ctx); err != nil {
+			return "", err
 		}
 
-		if res := fopsMkdir(buildDir, 0755); res == false {
-
-			return "", false
+		if err := fops.MkdirRecursive(buildDir, 0755); err != nil {
+			return "", err
 		}
 
-		if res := fopsCopy(ctx.origFile, dstOrig); res == false {
-
-			return "", false
+		if err := fops.CopyWithIgnores(ctx.origFile, dstOrig); err != nil {
+			return "", err
 		}
 
-		switch archType {
-
-		case TAR_TYPE_GZ:
-
-			if res := tarOpenGz(dstOrig, sourceDir); res == false {
-
-				return "", false
-			}
-
-		case TAR_TYPE_XZ:
-
-			if res := tarOpenXz(dstOrig, sourceDir); res == false {
-
-				return "", false
-			}
-
-		default:
-
-			fmt.Printf("Wrong orig file archive, only `tar.gz` or `tar.xz` formats allowed\n")
-			return "", false
+		if err := arch.Open(dstOrig, sourceDir); err != nil {
+			return "", err
 		}
-
 	} else {
-
-		if res := fopsCopy(ctx.projectRoot, sourceDir); res == false {
-
-			return "", false
+		if err := fops.CopyWithIgnores(ctx.projectRoot, sourceDir); err != nil {
+			return "", err
 		}
 	}
 
-	return sourceDir, true
+	return sourceDir, nil
 }
 
 func buildSourceDirPath(targetDir, buildName, projectName string, versionMajor, versionMinor, versionPatch int) string {
@@ -250,30 +211,26 @@ func buildOrigFilePath(targetDir, projectName string, versionMajor, versionMinor
 		archExt)
 }
 
-func buildCheckOrigVersion(ctx context) result {
+func buildCheckOrigVersion(ctx selfContext) error {
 
-	regexString := `^.*` + ctx.pSettings.ProjectName + `_([\d]+.[\d]+.[\d]+).orig.*$`
+	regexString := `^.*` + ctx.conf.ProjectName + `_([\d]+.[\d]+.[\d]+).orig.*$`
 
 	rgx := regexp.MustCompile(regexString)
 	s := rgx.FindStringSubmatch(ctx.origFile)
 
 	if len(s) == 0 {
-
-		fmt.Printf("Wrong orig file name format: does not satisfy regex (orig file: \"%s\", regex: \"%s\")\n", ctx.origFile, regexString)
-		return false
+		return fmt.Errorf("wrong orig file name format: does not satisfy regex (orig file: \"%s\", regex: \"%s\")", ctx.origFile, regexString)
 	}
 
 	oVersion := s[1]
 	pVersion := fmt.Sprintf("%d.%d.%d",
-		ctx.pSettings.Version.Major,
-		ctx.pSettings.Version.Minor,
-		ctx.pSettings.Version.Patch)
+		ctx.conf.Version.Major,
+		ctx.conf.Version.Minor,
+		ctx.conf.Version.Patch)
 
 	if oVersion != pVersion {
-
-		fmt.Printf("Mismatch project and orig file versions (project version: \"%s\", orig file version: \"%s\")\n", pVersion, oVersion)
-		return false
+		return fmt.Errorf("mismatch project and orig file versions (project version: \"%s\", orig file version: \"%s\")", pVersion, oVersion)
 	}
 
-	return true
+	return nil
 }

@@ -1,146 +1,71 @@
-package main
+package arch
 
 import (
 	"fmt"
-	"github.com/mholt/archiver"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/mholt/archiver"
 )
 
-const (
-	TAR_TYPE_UNKNOWN int = 0
-	TAR_TYPE_GZ      int = 1
-	TAR_TYPE_XZ      int = 2
-)
-
-func tarMakeGz(dstName, src string) result {
-	var files []string
+// Make makes an archive from `src` and saves result to file with `dst` name
+func Make(src, dst string) error {
 
 	p, err := filepath.Abs(src)
 	if err != nil {
-
-		fmt.Printf("Can't get absolute path: %s\n", err)
-		return false
+		return fmt.Errorf("can't get absolute path: %s (file: %s)", err, src)
 	}
 
-	files = tarDirScan(p, files)
-	if files == nil {
-
-		return false
+	files, err := prepare(p)
+	if err != nil {
+		return err
 	}
 
-	if err := archiver.TarGz.Make(dstName, files); err != nil {
-
-		fmt.Printf("Can't create tar.gz archive: %s\n", err)
-		return false
+	if err = archiver.Archive(files, dst); err != nil {
+		return fmt.Errorf("can't create archive: %s (archive: %s)", err, dst)
 	}
 
-	return true
+	return nil
 }
 
-func tarMakeXz(dstName, src string) result {
+// Open opens archive `arch` to `dst`
+func Open(arch, dst string) error {
+
+	p, err := filepath.Abs(dst)
+	if err != nil {
+		return fmt.Errorf("can't get absolute path: %s (file: %s)", err, dst)
+	}
+
+	if err = archiver.Unarchive(arch, p); err != nil {
+		return fmt.Errorf("can't unpack archive: %s (file: %s)", err, arch)
+	}
+
+	return nil
+}
+
+func prepare(path string) ([]string, error) {
+
 	var files []string
-
-	p, err := filepath.Abs(src)
-	if err != nil {
-
-		fmt.Printf("Can't get absolute path: %s\n", err)
-		return false
-	}
-
-	files = tarDirScan(p, files)
-	if files == nil {
-
-		return false
-	}
-
-	if err = archiver.TarXZ.Make(dstName, files); err != nil {
-
-		fmt.Printf("Can't create tar.xz archive: %s\n", err)
-		return false
-	}
-
-	return true
-}
-
-func tarOpenGz(archFile, dst string) result {
-
-	p, err := filepath.Abs(dst)
-	if err != nil {
-
-		fmt.Printf("Can't get absolute path: %s\n", err)
-		return false
-	}
-
-	if err = archiver.TarGz.Open(archFile, p); err != nil {
-
-		fmt.Printf("Can't unpack tar.gz archive: %s\n", err)
-		return false
-	}
-
-	return true
-}
-
-func tarOpenXz(archFile, dst string) result {
-
-	p, err := filepath.Abs(dst)
-	if err != nil {
-
-		fmt.Printf("Can't get absolute path: %s\n", err)
-		return false
-	}
-
-	if err = archiver.TarXZ.Open(archFile, p); err != nil {
-
-		fmt.Printf("Can't unpack tar.xz archive: %s\n", err)
-		return false
-	}
-
-	return true
-}
-
-func tarGetArchType(archFile string) int {
-
-	if archiver.TarGz.Match(archFile) == true {
-
-		return TAR_TYPE_GZ
-	}
-
-	if archiver.TarXZ.Match(archFile) == true {
-
-		return TAR_TYPE_XZ
-	}
-
-	return TAR_TYPE_UNKNOWN
-}
-
-func tarDirScan(path string, files []string) []string {
 
 	info, err := os.Stat(path)
 	if err != nil {
-
-		fmt.Printf("Stat error: %s (path: %s)\n", err, path)
-		return nil
+		return []string{}, fmt.Errorf("can't prepare file to archive, stat error: %s (path: %s)", err, path)
 	}
 
 	if info.IsDir() {
 
 		infos, err := ioutil.ReadDir(path)
 		if err != nil {
-
-			fmt.Printf("Can't read source directory for tar: %s\n", err)
-			return nil
+			return []string{}, fmt.Errorf("can't prepare file to archive, read source directory error: %s (path: %s)", err, path)
 		}
 
 		for _, info := range infos {
-
 			files = append(files, filepath.Join(path, info.Name()))
 		}
 	} else {
-
 		files = append(files, path)
 	}
 
-	return files
+	return files, nil
 }
