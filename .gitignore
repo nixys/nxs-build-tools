@@ -1,5 +1,6 @@
 /builds
 /.project
+/.vscode
 /tmp
 /objs
 _CPack_Packages
@@ -9,4 +10,4 @@ Makefile
 CPackConfig.cmake
 CPackSourceConfig.cmake
 cmake_install.cmake
-/src/version.go
+/version.go
