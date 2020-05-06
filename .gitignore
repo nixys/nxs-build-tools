@@ -11,3 +11,4 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 cmake_install.cmake
 /version.go
+/nxs-build-tools

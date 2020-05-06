@@ -1,4 +1,4 @@
-#PACKAGE# (#VERSION#-1) wheezy jessie stretch; urgency=low
+#PACKAGE# (#VERSION#-1) wheezy jessie stretch buster; urgency=low
 
   * New version nxs-build-tools
 
